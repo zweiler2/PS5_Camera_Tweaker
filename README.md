@@ -29,3 +29,10 @@ Open a command prompt or terminal and navigate to the extracted directory.
 ### 3. The resulting firmware file will be saved as `output.bin`.
 
 Note that the firmware file you provided will not be modified.
+
+## Credits
+
+- Lightbass's [firmware edit](https://github.com/psxdev/OrbisEyeCam/issues/10#issuecomment-1571621824) for the firmware_discord_and_gamma_fix.bin
+- Dkvcode's [comment](https://github.com/psxdev/OrbisEyeCam/issues/10#issuecomment-2295594922) on the offsets and values used
+- PavlikBender's [PS5 Camera Tweaker](https://github.com/PavlikBender/PS5CameraTweaker) Project for some code inspiration
+- Initial Findings & Discussion: [PSXHax Thread](https://www.psxhax.com/threads/ps5-hd-camera-firmware-files-dump-and-playstation-5-camera-on-pc.10117/)
