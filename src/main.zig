@@ -73,25 +73,29 @@ pub fn main() !void {
         std.process.exit(1);
     };
 
-    const old_firmware_file: std.fs.File = try std.fs.cwd().openFile(firmware_path, .{});
-    defer old_firmware_file.close();
+    const buffer: []u8 = blk: {
+        const old_file: std.fs.File = try std.fs.cwd().openFile(firmware_path, .{});
+        defer old_file.close();
 
-    // Read the entire file into memory
-    const file_size: u64 = try old_firmware_file.getEndPos();
-    if (file_size != EXPECTED_FIRMWARE_FILE_SIZE) {
-        try io_streams.stderr.print(
-            \\The firmware file size is incorrect!
-            \\It should be: {d} bytes.
-            \\But it is:    {d} bytes.
-            \\Please provide a valid firmware file.
-            \\
-        , .{ EXPECTED_FIRMWARE_FILE_SIZE, file_size });
-        try io_streams.stderr.flush();
-        std.process.exit(1);
-    }
-    const buffer: []u8 = try allocator.alloc(u8, file_size);
+        const file_size: u64 = try old_file.getEndPos();
+        if (file_size != EXPECTED_FIRMWARE_FILE_SIZE) {
+            try io_streams.stderr.print(
+                \\The firmware file size is incorrect!
+                \\It should be: {d} bytes.
+                \\But it is:    {d} bytes.
+                \\Please provide a valid firmware file.
+                \\
+            , .{ EXPECTED_FIRMWARE_FILE_SIZE, file_size });
+            try io_streams.stderr.flush();
+            std.process.exit(1);
+        }
+        var reader_buffer: [1024]u8 = undefined;
+        var old_file_reader: std.fs.File.Reader = old_file.reader(&reader_buffer);
+        const old_file_reader_interface: *std.Io.Reader = &old_file_reader.interface;
+
+        break :blk try old_file_reader_interface.readAlloc(allocator, file_size);
+    };
     defer allocator.free(buffer);
-    _ = try old_firmware_file.readAll(buffer);
 
     try io_streams.stdout.print("Old Firmware Settings:\n", .{});
     try io_streams.stdout.print("  Discord Fix: {}\n", .{buffer[DISCORD_FIX_OFFSETS[0]] == DISCORD_FIX_VALUES[0]});
@@ -115,7 +119,11 @@ pub fn main() !void {
 
     var new_firmware_file: std.fs.File = try std.fs.cwd().createFile("output.bin", .{});
     defer new_firmware_file.close();
-    try new_firmware_file.writeAll(buffer);
+
+    var writer_buffer: [1024]u8 = undefined;
+    var new_file_writer: std.fs.File.Writer = new_firmware_file.writer(&writer_buffer);
+    const new_file_writer_interface: *std.Io.Writer = &new_file_writer.interface;
+    try new_file_writer_interface.writeAll(buffer);
 }
 
 fn readUserInput(comptime T: type, text: []const u8, io_streams: IOStreams) !T {
