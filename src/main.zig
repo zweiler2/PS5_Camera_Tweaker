@@ -10,6 +10,8 @@ const DISCORD_FIX_VALUES = [_]comptime_int{
 };
 const AUTO_EXPOSURE_OFFSET = 0x010403;
 const AUTO_EXPOSURE_OFFSET_2 = 0x010407;
+const AUTO_EXPOSURE_VALUE_ON = 2;
+const AUTO_EXPOSURE_VALUE_OFF = 4;
 const BRIGHTNESS_OFFSET = 0x0102BF;
 const CONTRAST_OFFSET = 0x0102E3;
 const SATURATION_OFFSET = 0x01032B;
@@ -80,7 +82,7 @@ pub fn main() !void {
 
     try io_streams.stdout.print("Old Firmware Settings:\n", .{});
     try io_streams.stdout.print("  Discord Fix: {}\n", .{buffer[DISCORD_FIX_OFFSETS[0]] == DISCORD_FIX_VALUES[0]});
-    try io_streams.stdout.print("  Auto Exposure: {}\n", .{buffer[AUTO_EXPOSURE_OFFSET] == 2});
+    try io_streams.stdout.print("  Auto Exposure: {}\n", .{buffer[AUTO_EXPOSURE_OFFSET] == AUTO_EXPOSURE_VALUE_ON});
     try io_streams.stdout.print("  Brightness: {}\n", .{buffer[BRIGHTNESS_OFFSET]});
     try io_streams.stdout.print("  Contrast: {}\n", .{buffer[CONTRAST_OFFSET]});
     try io_streams.stdout.print("  Saturation: {}\n", .{buffer[SATURATION_OFFSET]});
@@ -156,8 +158,8 @@ fn editFirmware(buffer: []u8, settings: Settings) void {
             buffer[offset] = value;
         }
     }
-    buffer[AUTO_EXPOSURE_OFFSET] = if (settings.auto_exposure) 2 else 4;
-    buffer[AUTO_EXPOSURE_OFFSET_2] = if (settings.auto_exposure) 2 else 4;
+    buffer[AUTO_EXPOSURE_OFFSET] = if (settings.auto_exposure) AUTO_EXPOSURE_VALUE_ON else AUTO_EXPOSURE_VALUE_OFF;
+    buffer[AUTO_EXPOSURE_OFFSET_2] = if (settings.auto_exposure) AUTO_EXPOSURE_VALUE_ON else AUTO_EXPOSURE_VALUE_OFF;
     buffer[BRIGHTNESS_OFFSET] = settings.brightness;
     buffer[CONTRAST_OFFSET] = settings.contrast;
     buffer[SATURATION_OFFSET] = settings.saturation;
