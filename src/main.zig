@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const EXPECTED_FIRMWARE_FILE_SIZE = 68_948;
+
 const DISCORD_FIX_OFFSETS = [_]comptime_int{
     0xEEB6, 0xEEB7, 0xEEB8,
     0xEEBB, 0xEEBC, 0xEEBD,
@@ -76,6 +78,17 @@ pub fn main() !void {
 
     // Read the entire file into memory
     const file_size: u64 = try old_firmware_file.getEndPos();
+    if (file_size != EXPECTED_FIRMWARE_FILE_SIZE) {
+        try io_streams.stderr.print(
+            \\The firmware file size is incorrect!
+            \\It should be: {d} bytes.
+            \\But it is:    {d} bytes.
+            \\Please provide a valid firmware file.
+            \\
+        , .{ EXPECTED_FIRMWARE_FILE_SIZE, file_size });
+        try io_streams.stderr.flush();
+        std.process.exit(1);
+    }
     const buffer: []u8 = try allocator.alloc(u8, file_size);
     defer allocator.free(buffer);
     _ = try old_firmware_file.readAll(buffer);
