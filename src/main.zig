@@ -124,6 +124,7 @@ pub fn main() !void {
     var new_file_writer: std.fs.File.Writer = new_firmware_file.writer(&writer_buffer);
     const new_file_writer_interface: *std.Io.Writer = &new_file_writer.interface;
     try new_file_writer_interface.writeAll(buffer);
+    try new_firmware_file.sync();
 }
 
 fn readUserInput(comptime T: type, text: []const u8, io_streams: IOStreams) !T {
