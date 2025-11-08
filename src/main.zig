@@ -56,14 +56,14 @@ pub fn main() !void {
     };
 
     // Get arguments with proper cross-platform support
-    var args: std.process.ArgIterator = try std.process.argsWithAllocator(allocator);
-    defer args.deinit();
+    var arg_iter: std.process.ArgIterator = try std.process.argsWithAllocator(allocator);
+    defer arg_iter.deinit();
 
     // Skip program name but store it for error message
-    const prog_name: [:0]const u8 = args.next() orelse return error.NoProgramName;
+    const prog_name: [:0]const u8 = arg_iter.next() orelse return error.NoProgramName;
 
     // Get firmware path argument
-    const firmware_path: [:0]const u8 = args.next() orelse {
+    const firmware_path: [:0]const u8 = arg_iter.next() orelse {
         try io_streams.stderr.print(
             \\Please provide a firmware file path!
             \\Usage: {s} <path{c}to{c}firmware_file.bin>
@@ -107,7 +107,7 @@ pub fn main() !void {
     try io_streams.stdout.print("  Sharpness: {}\n", .{buffer[SHARPNESS_OFFSET]});
 
     try io_streams.stdout.print("\nNew Firmware Settings:\n", .{});
-    editFirmware(buffer, Settings{
+    editFirmware(buffer, .{
         .discord_fix = try readUserInput(bool, "Discord Fix (y/n): ", io_streams),
         .auto_exposure = try readUserInput(bool, "Auto Exposure (y/n): ", io_streams),
         .brightness = try readUserInput(u4, "Brightness (0-8): ", io_streams),
