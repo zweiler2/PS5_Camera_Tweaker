@@ -31,23 +31,23 @@ const Settings = struct {
 };
 
 const IOStreams = struct {
-    stdin: *std.io.Reader,
-    stdout: *std.io.Writer,
-    stderr: *std.io.Writer,
+    stdin: *std.Io.Reader,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
 };
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // Create an allocator
     var arena: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator: std.mem.Allocator = arena.allocator();
 
     var stdin_buffer: [1024]u8 = undefined;
-    var stdin_reader: std.fs.File.Reader = std.fs.File.stdin().reader(&stdin_buffer);
+    var stdin_reader: std.Io.File.Reader = std.Io.File.stdin().reader(init.io, &stdin_buffer);
     var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer: std.fs.File.Writer = std.fs.File.stdout().writer(&stdout_buffer);
+    var stdout_writer: std.Io.File.Writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
     var stderr_buffer: [1024]u8 = undefined;
-    var stderr_writer: std.fs.File.Writer = std.fs.File.stderr().writer(&stderr_buffer);
+    var stderr_writer: std.Io.File.Writer = std.Io.File.stderr().writer(init.io, &stderr_buffer);
 
     const io_streams: IOStreams = .{
         .stdin = &stdin_reader.interface,
@@ -56,7 +56,7 @@ pub fn main() !void {
     };
 
     // Get arguments with proper cross-platform support
-    var arg_iter: std.process.ArgIterator = try std.process.argsWithAllocator(allocator);
+    var arg_iter: std.process.Args.Iterator = try init.minimal.args.iterateAllocator(allocator);
     defer arg_iter.deinit();
 
     // Skip program name but store it for error message
@@ -74,10 +74,10 @@ pub fn main() !void {
     };
 
     const buffer: []u8 = blk: {
-        const old_file: std.fs.File = try std.fs.cwd().openFile(firmware_path, .{});
-        defer old_file.close();
+        const old_file: std.Io.File = try std.Io.Dir.cwd().openFile(init.io, firmware_path, .{});
+        defer old_file.close(init.io);
 
-        const file_size: u64 = try old_file.getEndPos();
+        const file_size: usize = @intCast(try old_file.length(init.io));
         if (file_size != EXPECTED_FIRMWARE_FILE_SIZE) {
             try io_streams.stderr.print(
                 \\The firmware file size is incorrect!
@@ -90,7 +90,7 @@ pub fn main() !void {
             std.process.exit(1);
         }
         var reader_buffer: [1024]u8 = undefined;
-        var old_file_reader: std.fs.File.Reader = old_file.reader(&reader_buffer);
+        var old_file_reader: std.Io.File.Reader = old_file.reader(init.io, &reader_buffer);
         const old_file_reader_interface: *std.Io.Reader = &old_file_reader.interface;
 
         break :blk try old_file_reader_interface.readAlloc(allocator, file_size);
@@ -117,14 +117,14 @@ pub fn main() !void {
         .sharpness = try readUserInput(u4, "Sharpness (0-8): ", io_streams),
     });
 
-    var new_firmware_file: std.fs.File = try std.fs.cwd().createFile("output.bin", .{});
-    defer new_firmware_file.close();
+    var new_firmware_file: std.Io.File = try std.Io.Dir.cwd().createFile(init.io, "output.bin", .{});
+    defer new_firmware_file.close(init.io);
 
     var writer_buffer: [1024]u8 = undefined;
-    var new_file_writer: std.fs.File.Writer = new_firmware_file.writer(&writer_buffer);
+    var new_file_writer: std.Io.File.Writer = new_firmware_file.writer(init.io, &writer_buffer);
     const new_file_writer_interface: *std.Io.Writer = &new_file_writer.interface;
     try new_file_writer_interface.writeAll(buffer);
-    try new_firmware_file.sync();
+    try new_firmware_file.sync(init.io);
 }
 
 fn readUserInput(comptime T: type, text: []const u8, io_streams: IOStreams) !T {
