@@ -37,11 +37,6 @@ const IOStreams = struct {
 };
 
 pub fn main(init: std.process.Init) !void {
-    // Create an allocator
-    var arena: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator: std.mem.Allocator = arena.allocator();
-
     var stdin_buffer: [1024]u8 = undefined;
     var stdin_reader: std.Io.File.Reader = std.Io.File.stdin().reader(init.io, &stdin_buffer);
     var stdout_buffer: [1024]u8 = undefined;
@@ -56,7 +51,7 @@ pub fn main(init: std.process.Init) !void {
     };
 
     // Get arguments with proper cross-platform support
-    var arg_iter: std.process.Args.Iterator = try init.minimal.args.iterateAllocator(allocator);
+    var arg_iter: std.process.Args.Iterator = try init.minimal.args.iterateAllocator(init.gpa);
     defer arg_iter.deinit();
 
     // Skip program name but store it for error message
@@ -93,9 +88,9 @@ pub fn main(init: std.process.Init) !void {
         var old_file_reader: std.Io.File.Reader = old_file.reader(init.io, &reader_buffer);
         const old_file_reader_interface: *std.Io.Reader = &old_file_reader.interface;
 
-        break :blk try old_file_reader_interface.readAlloc(allocator, file_size);
+        break :blk try old_file_reader_interface.readAlloc(init.gpa, file_size);
     };
-    defer allocator.free(buffer);
+    defer init.gpa.free(buffer);
 
     try io_streams.stdout.print("Old Firmware Settings:\n", .{});
     try io_streams.stdout.print("  Discord Fix: {}\n", .{buffer[DISCORD_FIX_OFFSETS[0]] == DISCORD_FIX_VALUES[0]});
