@@ -125,6 +125,9 @@ pub fn main(init: std.process.Init) !void {
     const new_file_writer_interface: *std.Io.Writer = &new_file_writer.interface;
     try new_file_writer_interface.writeAll(buffer);
     try new_firmware_file.sync(init.io);
+
+    try io_streams.stdout.print("\nNew Firmware File successfully written to output.bin!\n", .{});
+    try io_streams.stdout.flush();
 }
 
 fn readUserInput(comptime T: type, text: []const u8, io_streams: IOStreams) !T {
